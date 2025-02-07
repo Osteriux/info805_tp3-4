@@ -4,9 +4,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Stack;
 
 public class Node {
+    protected static HashMap<NodeType, Integer> etiquetteCpt = new HashMap<NodeType, Integer>();
 
     protected NodeType type;
 	protected String nom;
@@ -197,16 +197,44 @@ public class Node {
 		return res;
     }
 
+    protected static void initEtiquetteCpt() {
+        etiquetteCpt.clear();
+        etiquetteCpt.put(NodeType.AND,0);
+        etiquetteCpt.put(NodeType.OR,0);
+        etiquetteCpt.put(NodeType.NOT,0);
+        etiquetteCpt.put(NodeType.EGAL,0);
+        etiquetteCpt.put(NodeType.GT,0);
+        etiquetteCpt.put(NodeType.GTE,0);
+        etiquetteCpt.put(NodeType.WHILE, 0);
+        etiquetteCpt.put(NodeType.IF_T, 0);
+        etiquetteCpt.put(NodeType.IF_TE, 0);
+    }
+
+    // NIL,
     protected String toInstruction() {
         switch (this.type) {
             case POINT:
                 return this.fils.get(0).toInstruction();
             case SEMI:
-                return this.fils.get(0).toInstruction() + this.fils.get(1).toInstruction();
+                return this.fils.get(0).toInstruction() +
+                     this.fils.get(1).toInstruction();
+            case NIL:
+                return "\tnop\n";
             case IDENT:
                 return "\tmov eax, " + this.valeur.toString() + "\n";
             case ENTIER:
                 return "\tmov eax, " + this.valeur.toString() + "\n";
+            case INPUT:
+                return "\tin eax\n";
+            case OUTPUT:
+                return this.fils.get(0).toInstruction() +
+                 "\tout eax\n";
+            case THEN:
+                return this.fils.get(0).toInstruction();
+            case ELSE:
+                return this.fils.get(0).toInstruction();
+            case DO:
+                return this.fils.get(0).toInstruction();
             case LET:
                 return this.fils.get(1).toInstruction() + 
                     "\tmov " + this.fils.get(0).valeur.toString() + ", eax\n";
@@ -234,6 +262,145 @@ public class Node {
                     this.fils.get(1).toInstruction() + 
                     "\tpop ebx\n" + 
                     "\tadd eax, ebx\n";
+            case MOINS_UNAIRE:
+                return this.fils.get(0).toInstruction() + 
+                    "\tmov ebx, eax\n" +
+                    "\tmov eax, 0\n" +
+                    "\tsub eax, ebx\n";
+            case MOD:
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" + // ebx = first operand
+                    "\tmov ecx, eax\n" + // ecx = second operand
+                    "\tmov eax, ebx\n" + // eax = first operand
+                    "\tdiv eax, ecx\n" + // eax = eax / ecx (quotient)
+                    "\tmul eax, ecx\n" + // eax = quotient * second operand
+                    "\tmov edx, eax\n" + // edx = product
+                    "\tmov eax, ebx\n" + // eax = first operand
+                    "\tsub eax, edx\n"; // eax = first operand - product (remainder)
+            case GT:
+                etiquetteCpt.put(NodeType.GT, etiquetteCpt.get(NodeType.GT) + 1);
+                String eId = etiquetteCpt.get(NodeType.GT).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tsub eax, ebx\n" +
+                    "\tjle faux_gt_"+eId+"\n" +
+                    "\tmov eax, 1\n" +
+                    "\tjmp fin_gt_"+eId+"\n" +
+                    "faux_gt_"+eId+":\n" +
+                    "\tmov eax, 0\n" +
+                    "fin_gt_"+eId+":\n";
+            case GTE:
+                etiquetteCpt.put(NodeType.GTE, etiquetteCpt.get(NodeType.GTE) + 1);
+                eId = etiquetteCpt.get(NodeType.GTE).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tsub eax, ebx\n" +
+                    "\tjl faux_gte_"+eId+"\n" +
+                    "\tmov eax, 1\n" +
+                    "\tjmp fin_gte_"+eId+"\n" +
+                    "faux_gte_"+eId+":\n" +
+                    "\tmov eax, 0\n" +
+                    "fin_gte_"+eId+":\n";
+            case EGAL:
+                etiquetteCpt.put(NodeType.EGAL, etiquetteCpt.get(NodeType.EGAL) + 1);
+                eId = etiquetteCpt.get(NodeType.EGAL).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tsub eax, ebx\n" +
+                    "\tjz faux_egal_"+eId+"\n" +
+                    "\tmov eax, 1\n" +
+                    "\tjmp fin_egal_"+eId+"\n" +
+                    "faux_egal_"+eId+":\n" +
+                    "\tmov eax, 0\n" +
+                    "fin_egal_"+eId+":\n";
+            case NOT:
+                etiquetteCpt.put(NodeType.NOT, etiquetteCpt.get(NodeType.NOT) + 1);
+                eId = etiquetteCpt.get(NodeType.NOT).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tmov ebx, 0" +
+                    "\tsub ebx, eax\n" +
+                    "\tjl faux_not_"+eId+"\n" +
+                    "\tmov eax, 1\n" +
+                    "\tjmp fin_not_"+eId+"\n" +
+                    "faux_not_"+eId+":\n" +
+                    "\tmov eax, 0\n" +
+                    "fin_not_"+eId+":\n";
+            case OR:
+                etiquetteCpt.put(NodeType.OR, etiquetteCpt.get(NodeType.OR) + 1);
+                eId = etiquetteCpt.get(NodeType.OR).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tmov ecx, 0" +
+                    "\tcmp ecx, eax\n" + // Compare second operand with 0
+                    "\tjl vrai_or_"+eId+"\n" + // If second operand is 1, jump to true case
+                    "\tmov ecx, 0\n" +
+                    "\tsub ecx, ebx\n" + // Compare first operand with 0
+                    "\tjl vrai_or_"+eId+"\n" + // If first operand is 1, jump to true case
+                    "\tmov eax, 0\n" + // Both operands are non-zero, set eax to 1 (false)
+                    "\tjmp fin_and_"+eId+"\n" + // Jump to end
+                    "vrai_or_"+eId+":\n" +
+                    "\tmov eax, 1\n" + // One or both operands are zero, set eax to 0 (true)
+                    "fin_and_"+eId+":\n";
+            case AND:
+                etiquetteCpt.put(NodeType.AND, etiquetteCpt.get(NodeType.AND) + 1);
+                eId = etiquetteCpt.get(NodeType.AND).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tcmp eax, 0\n" + // Compare second operand with 0
+                    "\tje faux_and_"+eId+"\n" + // If second operand is 0, jump to false case
+                    "\tcmp ebx, 0\n" + // Compare first operand with 0
+                    "\tje faux_and_"+eId+"\n" + // If first operand is 0, jump to false case
+                    "\tmov eax, 1\n" + // Both operands are non-zero, set eax to 1 (true)
+                    "\tjmp fin_and_"+eId+"\n" + // Jump to end
+                    "faux_and_"+eId+":\n" +
+                    "\tmov eax, 0\n" + // One or both operands are zero, set eax to 0 (false)
+                    "fin_and_"+eId+":\n";
+            case IF_T:
+                etiquetteCpt.put(NodeType.IF_T, etiquetteCpt.get(NodeType.IF_T) + 1);
+                eId = etiquetteCpt.get(NodeType.IF_T).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tmov ebx, 0\n" +
+                    "\tsub ebx, eax\n" +
+                    "\tjl vrai_if_"+eId+"\n" +
+                    "\tjmp fin_if_"+eId+"\n" +
+                    "vrai_if_"+eId+":\n" +
+                    this.fils.get(1).toInstruction() +
+                    "fin_if_"+eId+":\n";
+            case IF_TE:
+                etiquetteCpt.put(NodeType.IF_TE, etiquetteCpt.get(NodeType.IF_TE) + 1);
+                eId = etiquetteCpt.get(NodeType.IF_TE).toString();
+                return this.fils.get(0).toInstruction() + 
+                    "\tmov ebx, 0\n" +
+                    "\tsub ebx, eax\n" +
+                    "\tjl vrai_if_"+eId+"\n" +
+                    this.fils.get(1).toInstruction() +
+                    "\tjmp fin_if_"+eId+"\n" +
+                    "vrai_if_"+eId+":\n" +
+                    this.fils.get(2).toInstruction() +
+                    "fin_if_"+eId+":\n";
+            case WHILE:
+                etiquetteCpt.put(NodeType.WHILE, etiquetteCpt.get(NodeType.WHILE) + 1);
+                eId = etiquetteCpt.get(NodeType.WHILE).toString();
+                return "debut_while_"+eId+":\n" +
+                    this.fils.get(0).toInstruction() + 
+                    "\tmov ebx, 0\n" +
+                    "\tsub ebx, eax\n" +
+                    "\tjl fin_while_"+eId+"\n" +
+                    this.fils.get(1).toInstruction() +
+                    "\tjmp debut_while_"+eId+"\n" +
+                    "fin_while_"+eId+":\n";
             default:
                 throw new IllegalArgumentException("Invalid instruction Node " + this.type);
         }
@@ -246,12 +413,14 @@ public class Node {
             w.write("\n");
             w.write("DATA SEGMENT\n");
             for (String key : env.keySet()) {
-                w.write("\t" + key + " DD " + env.get(key) + "\n");
+                w.write("\t" + key + " DD \n");
             }
             w.write("DATA ENDS\n");
+            initEtiquetteCpt();
             w.write("CODE SEGMENT\n");
             w.write(this.toInstruction());
             w.write("CODE ENDS\n");
+            etiquetteCpt.clear();
         } catch (IOException e) {
             e.printStackTrace();
         }
