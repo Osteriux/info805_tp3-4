@@ -57,7 +57,7 @@ precedence left MOINS_UNAIRE;
 /* grammaire */
 // un pg est une sequence d'insctions terminee par point
 program ::= 
-    sequence:s POINT {: arbre.addFils(s); /*arbre.afficher();*/ arbre.eval("test"); :}
+    sequence:s POINT {: arbre.addFils(s); /*arbre.afficher();*/ arbre.toProgram("test", vars); :}
     ;
 
 // une sequence est une suite d'instructions separes par des point virgules 
@@ -67,11 +67,11 @@ sequence ::= expression:e SEMI sequence:s {: RESULT = new Node(NodeType.SEMI, e,
             ;
 
 // une expession est soit une affectation ,une       
-            //  | IF expr:cond THEN expression:a1 {: RESULT = new Node(NodeType.IF, cond, new Node(NodeType.THEN, a1)); :}       
+            //  | IF expr:cond THEN expression:a1 {: RESULT = new Node(NodeType.IF_T, cond, new Node(NodeType.THEN, a1)); :}       
 expression ::= expr:e {: RESULT = e; :}
-             | LET IDENT:nom EGAL expr:e {: RESULT = new Node(NodeType.LET, new Node(NodeType.IDENT, nom), e); :}         
+             | LET IDENT:nom EGAL expr:e {: RESULT = new Node(NodeType.LET, new Node(NodeType.IDENT, nom), e); vars.put(nom, 0); :}         
              | WHILE expr:cond DO expression:e {: RESULT = new Node(NodeType.WHILE, cond, new Node(NodeType.DO, e)); :}
-             | IF expr:cond THEN expression:a1 ELSE expression:a2 {: RESULT = new Node(NodeType.IF, cond, new Node(NodeType.THEN, a1), new Node(NodeType.ELSE, a2)); :}
+             | IF expr:cond THEN expression:a1 ELSE expression:a2 {: RESULT = new Node(NodeType.IF_TE, cond, new Node(NodeType.THEN, a1), new Node(NodeType.ELSE, a2)); :}
              | error {: erreur = true; RESULT = new Node(NodeType.ERROR); :}
              ;
 
@@ -87,7 +87,7 @@ expr ::= NOT:op expr:e {: RESULT = new Node(NodeType.NOT, e); :}
        | expr:e1 MUL expr:e2 {: RESULT = new Node(NodeType.MUL, e1, e2); :}
        | expr:e1 DIV expr:e2 {: RESULT = new Node(NodeType.DIV, e1, e2); :}
        | expr:e1 MOD expr:e2 {: RESULT = new Node(NodeType.MOD, e1, e2); :}
-       | MOINS expr:e {: RESULT = new Node(NodeType.MOINS, e); :} %prec MOINS_UNAIRE 
+       | MOINS expr:e {: RESULT = new Node(NodeType.MOINS_UNAIRE, e); :} %prec MOINS_UNAIRE 
        | OUTPUT expr:e {: RESULT = new Node(NodeType.OUTPUT, e); :}
        | INPUT {: RESULT = new Node(NodeType.INPUT); :}
        | NIL {: RESULT = new Node(NodeType.NIL); :}

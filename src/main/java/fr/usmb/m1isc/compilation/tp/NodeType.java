@@ -3,6 +3,7 @@ package fr.usmb.m1isc.compilation.tp;
 public enum NodeType {
     PLUS,
     MOINS,
+    MOINS_UNAIRE,
     MUL,
     DIV,
     MOD,
@@ -16,7 +17,8 @@ public enum NodeType {
     LET,
     INPUT,
     OUTPUT,
-    IF,
+    IF_TE,
+    IF_T,
     THEN,
     ELSE,
     WHILE,

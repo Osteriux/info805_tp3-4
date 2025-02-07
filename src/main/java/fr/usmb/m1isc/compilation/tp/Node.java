@@ -3,6 +3,8 @@ package fr.usmb.m1isc.compilation.tp;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Stack;
 
 public class Node {
 
@@ -58,7 +60,7 @@ public class Node {
             case DO:
                 this.nom = "DO";
                 break;
-            case MOINS:
+            case MOINS_UNAIRE:
                 this.nom = "MOINS_UNAIRE";
                 break;
             default:
@@ -138,7 +140,7 @@ public class Node {
             case SEMI:
                 nom = "SEMI";
                 break;
-            case IF:
+            case IF_T:
                 nom = "IF_THEN";
                 break;
             default:
@@ -159,7 +161,7 @@ public class Node {
 	 */
 	public Node(NodeType t, Node fils1, Node fils2, Node fils3) {
         switch (t) {
-            case IF:
+            case IF_TE:
                 nom = "IF_THEN_ELSE";
                 break;
             default:
@@ -195,9 +197,61 @@ public class Node {
 		return res;
     }
 
-    public void eval(String name){
-        try (FileWriter writer = new FileWriter(name + ".lambdada", true)) {
-            writer.write(this.toString() + System.lineSeparator());
+    protected String toInstruction() {
+        switch (this.type) {
+            case POINT:
+                return this.fils.get(0).toInstruction();
+            case SEMI:
+                return this.fils.get(0).toInstruction() + this.fils.get(1).toInstruction();
+            case IDENT:
+                return "\tmov eax, " + this.valeur.toString() + "\n";
+            case ENTIER:
+                return "\tmov eax, " + this.valeur.toString() + "\n";
+            case LET:
+                return this.fils.get(1).toInstruction() + 
+                    "\tmov " + this.fils.get(0).valeur.toString() + ", eax\n";
+            case DIV:
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" + 
+                    "\tdiv eax, ebx\n";
+            case MUL:
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" + 
+                    "\tmul eax, ebx\n";
+            case MOINS:
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" + 
+                    "\tsub eax, ebx\n";
+            case PLUS:
+                return this.fils.get(0).toInstruction() + 
+                    "\tpush eax\n" + 
+                    this.fils.get(1).toInstruction() + 
+                    "\tpop ebx\n" + 
+                    "\tadd eax, ebx\n";
+            default:
+                throw new IllegalArgumentException("Invalid instruction Node " + this.type);
+        }
+    }
+
+    public void toProgram(String name, HashMap<String, Integer> env) {
+        try (FileWriter w = new FileWriter(name + ".lambdada", true)) {
+            w.write("\n");
+            w.write(this.toString() + "\n");
+            w.write("\n");
+            w.write("DATA SEGMENT\n");
+            for (String key : env.keySet()) {
+                w.write("\t" + key + " DD " + env.get(key) + "\n");
+            }
+            w.write("DATA ENDS\n");
+            w.write("CODE SEGMENT\n");
+            w.write(this.toInstruction());
+            w.write("CODE ENDS\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
