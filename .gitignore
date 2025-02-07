@@ -34,3 +34,4 @@
 # IntelliJ SonarLint plugin
 .idea/sonarlint/
 
+*.lambdada
