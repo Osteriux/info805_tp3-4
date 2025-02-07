@@ -210,7 +210,6 @@ public class Node {
         etiquetteCpt.put(NodeType.IF_TE, 0);
     }
 
-    // NIL,
     protected String toInstruction() {
         switch (this.type) {
             case POINT:
@@ -268,17 +267,14 @@ public class Node {
                     "\tmov eax, 0\n" +
                     "\tsub eax, ebx\n";
             case MOD:
-                return this.fils.get(0).toInstruction() + 
+                return this.fils.get(1).toInstruction() + 
                     "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" + // ebx = first operand
-                    "\tmov ecx, eax\n" + // ecx = second operand
-                    "\tmov eax, ebx\n" + // eax = first operand
-                    "\tdiv eax, ecx\n" + // eax = eax / ecx (quotient)
-                    "\tmul eax, ecx\n" + // eax = quotient * second operand
-                    "\tmov edx, eax\n" + // edx = product
-                    "\tmov eax, ebx\n" + // eax = first operand
-                    "\tsub eax, edx\n"; // eax = first operand - product (remainder)
+                    this.fils.get(0).toInstruction() + 
+                    "\tpop ebx\n" +
+                    "\tmov ecx, eax\n" +
+                    "\tdiv ecx, ebx\n" +
+                    "\tmul ecx, ebx\n" +
+                    "\tsub eax, ecx\n";
             case GT:
                 etiquetteCpt.put(NodeType.GT, etiquetteCpt.get(NodeType.GT) + 1);
                 String eId = etiquetteCpt.get(NodeType.GT).toString();
@@ -395,9 +391,7 @@ public class Node {
                 eId = etiquetteCpt.get(NodeType.WHILE).toString();
                 return "debut_while_"+eId+":\n" +
                     this.fils.get(0).toInstruction() + 
-                    "\tmov ebx, 0\n" +
-                    "\tsub ebx, eax\n" +
-                    "\tjl fin_while_"+eId+"\n" +
+                    "\tjz fin_while_"+eId+"\n" +
                     this.fils.get(1).toInstruction() +
                     "\tjmp debut_while_"+eId+"\n" +
                     "fin_while_"+eId+":\n";
