@@ -1,73 +1,212 @@
-# TP Compilation : Génération d'arbres abstraits
+###### Xavier Mazière
 
-L'objectif du TP est d'utiliser les outils JFlex et CUP pour générer des arbres abstraits correspondant à un sous ensemble du langage **λ-ada**.
+# INFO805 TP3-4
 
-## Exercice 1 :
+## Présentation
 
-Utiliser JFlex et CUP pour générer l'arbre abstrait correspondant à l'analyse d'expressions arithmétiques sur les nombres entiers.
+### Node
 
-Exemple de fichier source pour l'analyseur :
+La classe Node représente un arbre n-aire utilisé pour construire l'arbre abstrait du programme pour ensuit le convertire en lambdada.
 
+### NodeType
+
+NodeType est un enum des différents types de nodes (aka d'opérations) supportés par Node. Il permet de créer et d'interpréter les nodes sans ambiguïté.
+
+## Examples
+
+> Calculatrice
 ```
-12 + 5;             /* ceci est un commentaire */
-10 / 2 - 3;  99;    /* le point-virgule sépare les expressions à évaluer */
-/* l'évaluation donne toujours un nombre entier */
-((30 * 1) + 4) mod 2; /* opérateurs binaires */
-3 * -4;             /* attention à l'opérateur unaire */
-
-let prixHt = 200;   /* une variable prend valeur lors de sa déclaration */
-let prixTtc =  prixHt * 119 / 100;
-prixTtc + 100.
+let op = input;
+let a = input;
+let b = input;
+while (not ( op = 0 ) )
+do (
+    if (op = 1) 
+    then (
+        output a + b
+    );
+    if (op = 2)
+    then (
+        output a - b
+    );
+    if (op = 3)
+    then (
+        output a * b
+    );
+    if (op = 4)
+    then (
+        output a / b
+    );
+    let op = input;
+    let a = input;
+    let b = input
+)
+.
+```
+> Calculatrice
+```
+DATA SEGMENT
+	op DD 
+	a DD 
+	b DD 
+DATA ENDS
+CODE SEGMENT
+	in eax
+	mov op, eax
+	in eax
+	mov a, eax
+	in eax
+	mov b, eax
+	mov eax, op
+	push eax
+	mov eax, 1
+	pop ebx
+	sub eax, ebx
+	jz vrai_egal_1
+	mov eax, 0
+	jmp fin_egal_1
+vrai_egal_1:
+	mov eax, 1
+fin_egal_1:
+	mov ebx, 0
+	sub ebx, eax
+	jl vrai_if_1
+	jmp fin_if_1
+vrai_if_1:
+	mov eax, b
+	push eax
+	mov eax, a
+	pop ebx
+	add eax, ebx
+	out eax
+fin_if_1:
+	mov eax, op
+	push eax
+	mov eax, 2
+	pop ebx
+	sub eax, ebx
+	jz vrai_egal_2
+	mov eax, 0
+	jmp fin_egal_2
+vrai_egal_2:
+	mov eax, 1
+fin_egal_2:
+	mov ebx, 0
+	sub ebx, eax
+	jl vrai_if_2
+	jmp fin_if_2
+vrai_if_2:
+	mov eax, b
+	push eax
+	mov eax, a
+	pop ebx
+	sub eax, ebx
+	out eax
+fin_if_2:
+	mov eax, op
+	push eax
+	mov eax, 3
+	pop ebx
+	sub eax, ebx
+	jz vrai_egal_3
+	mov eax, 0
+	jmp fin_egal_3
+vrai_egal_3:
+	mov eax, 1
+fin_egal_3:
+	mov ebx, 0
+	sub ebx, eax
+	jl vrai_if_3
+	jmp fin_if_3
+vrai_if_3:
+	mov eax, b
+	push eax
+	mov eax, a
+	pop ebx
+	mul eax, ebx
+	out eax
+fin_if_3:
+	mov eax, op
+	push eax
+	mov eax, 4
+	pop ebx
+	sub eax, ebx
+	jz vrai_egal_4
+	mov eax, 0
+	jmp fin_egal_4
+vrai_egal_4:
+	mov eax, 1
+fin_egal_4:
+	mov ebx, 0
+	sub ebx, eax
+	jl vrai_if_4
+	jmp fin_if_4
+vrai_if_4:
+	mov eax, b
+	push eax
+	mov eax, a
+	pop ebx
+	div eax, ebx
+	out eax
+fin_if_4:
+CODE ENDS
 ```
 
-L'expression
-
-```
-let prixTtc =  prixHt * 119 / 100;
-prixTtc + 100
-```
-pourra donner, par exemple, l'arbre suivant :
-
-![exemple arbre abtrait](arbre.png "arbre abstrait")
-
-Une fois l'arbre généré, récupérez le dans le programme pricipal et affichez le, par exemple sous la forme d'une expression préfixée parenthésée :
-`(; (LET prixTtc (/ (* prixHt 119) 100)) (+ prixTtc 100))`
-
-## Exercice 2 :
-
-Compléter la grammaire précédente en y ajoutant les opérateurs booléens, ceux de comparaison, la boucle et la conditionnelle, afin d'obtenir un sous-ensemble du langage **λ-ada** un peu plus complet.
-
-Grammaire abstraite du sous-ensemble de λ-ada correspondant :
-
-```
-expression → expression ';' expression  
-expression → LET IDENT '=' expression
-expression → IF expression THEN expression ELSE expression
-expression → WHILE expression DO expression
-expression → '-' expression
-expression → expression '+' expression
-expression → expression '-' expression
-expression → expression '*' expression
-expression → expression '/' expression
-expression → expression MOD expression
-expression → expression '<' expression
-expression → expression '<=' expression
-expression → expression '=' expression
-expression → expression AND expression
-expression → expression OR expression
-expression → NOT expression 
-expression → OUTPUT expression 
-expression → INPUT | NIL | IDENT | ENTIER
-```
-
-Le langage obtenu est tout de suite un peu plus intéressant et permet de programmer plus de choses.
-
-Exemple de programme possible pour le sous-ensemble de λ-ada considéré ici : calcul de PGCD.
-
+> PGCD
 ```
 let a = input;
 let b = input;
-while (0 < b)
-do (let aux=(a mod b); let a=b; let b=aux );
-output a .
+while ( 0 < b )
+do (
+    let aux = ( a mod b );
+    let a = b;
+    let b = aux
+);
+output a
+.
 ```
+> PGCD
+```
+DATA SEGMENT
+	a DD 
+	b DD 
+	aux DD 
+DATA ENDS
+CODE SEGMENT
+	in eax
+	mov a, eax
+	in eax
+	mov b, eax
+debut_while_1:
+	mov eax, 0
+	push eax
+	mov eax, b
+	pop ebx
+	sub eax, ebx
+	jle faux_gt_1
+	mov eax, 1
+	jmp fin_gt_1
+faux_gt_1:
+	mov eax, 0
+fin_gt_1:
+	jz fin_while_1
+	mov eax, b
+	push eax
+	mov eax, a
+	pop ebx
+	mov ecx, eax
+	div ecx, ebx
+	mul ecx, ebx
+	sub eax, ecx
+	mov aux, eax
+	mov eax, b
+	mov a, eax
+	mov eax, aux
+	mov b, eax
+	jmp debut_while_1
+fin_while_1:
+	mov eax, a
+	out eax
+CODE ENDS
+```
+

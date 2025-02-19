@@ -351,7 +351,7 @@ public class Node {
                 cpt.put(NodeType.NOT, cpt.get(NodeType.NOT) + 1);
                 eId = cpt.get(NodeType.NOT).toString(); // Créer un identifiant unique pour l'instruction
                 return this.fils.get(0).toInstruction(cpt) + // On charge l'opérande dans eax
-                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
                     "\tsub ebx, eax\n" + // On soustrait l'opérande à 0
                     "\tjl faux_not_"+eId+"\n" + // Si le résultat est inférieur à 0, on saute à la fausse condition
                     "\tmov eax, 1\n" + // Sinon, on met 1 dans eax
@@ -363,11 +363,11 @@ public class Node {
                 cpt.put(NodeType.OR, cpt.get(NodeType.OR) + 1);
                 eId = cpt.get(NodeType.OR).toString(); // Créer un identifiant unique pour l'instruction
                 return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
-                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
                     "\tsub ebx, eax\n" + // On soustrait le premier opérande à 0
                     "\tjge vrai_or_"+eId+"\n" + // Si le premier opérande est supérieur ou égal à 0, on saute à la vraie condition
                     this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
-                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
                     "\tsub ebx, eax\n" + // On soustrait le deuxième opérande à 0
                     "\tjge vrai_or_"+eId+"\n" + // Si le deuxième opérande est supérieur ou égal à 0, on saute à la vraie condition
                     "\tmov eax, 0\n" + // Sinon, on met 0 dans eax
