@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Node {
-    protected static HashMap<NodeType, Integer> etiquetteCpt = new HashMap<NodeType, Integer>();
 
     protected NodeType type;
 	protected String nom;
@@ -15,7 +14,9 @@ public class Node {
 
 	/**
 	 * Constructeur Node
-	 * @param nom
+     * @exception IllegalArgumentException NodeTypes valides:
+     *  ERROR, NIL, POINT, INPUT
+	 * @param t type de Node
 	 */
 	public Node(NodeType t) {
         switch (t) {
@@ -40,7 +41,9 @@ public class Node {
 
 	/**
 	 * Constructeur Unary Node 
-	 * @param nom
+     * @exception IllegalArgumentException NodeTypes valides:
+     *  NOT, OUTPUT, THEN, ELSE, DO, MOINS_UNAIRE
+	 * @param t type de Node
 	 * @param fils1
 	 */
 	public Node(NodeType t, Node fils1) {
@@ -71,6 +74,16 @@ public class Node {
 		this.fils.add(fils1);
 	}
 
+    /**
+     * Constructeur Leaf Node
+     * @exception IllegalArgumentException NodeTypes valides:
+     *  ENTIER, IDENT
+     * @exception IllegalArgumentException 
+     *  ENTIER Node doit avoir une valeur Integer
+     *  IDENT Node doit avoir une valeur String
+     * @param t type de Node
+     * @param valeur valeur de la Node (Integer: ENTIER ou String: IDENT)
+     */
     public Node(NodeType t, Object valeur) {
         switch (t) {
             case ENTIER:
@@ -95,7 +108,9 @@ public class Node {
 
 	/**
 	 * Constructeur Binary Node
-	 * @param nom
+     * @exception IllegalArgumentException NodeTypes valides:
+     *  PLUS, MOINS, MUL, DIV, MOD, OR, AND, EGAL, GT, GTE, LET, WHILE, SEMI, IF_T
+	 * @param t type de Node
 	 * @param fils1
 	 * @param fils2
 	 */
@@ -154,7 +169,9 @@ public class Node {
 
 	/**
 	 * Constructeur Ternary Node
-	 * @param nom
+     * @exception IllegalArgumentException NodeTypes valides:
+     *  IF_TE
+	 * @param t type de Node
 	 * @param fils1
 	 * @param fils2
 	 * @param fils3
@@ -174,11 +191,14 @@ public class Node {
 		this.fils.add(fils3);
 	}
 
-	/**
+	/** addFils
 	 * Ajoute un fils à la liste des fils
 	 * @param fils
 	 */
 	public void addFils(Node fils) {
+        if(fils == null){
+            throw new IllegalArgumentException("Cannot add null Node");
+        }
 		this.fils.add(fils);
 	}
 
@@ -197,210 +217,227 @@ public class Node {
 		return res;
     }
 
-    protected static void initEtiquetteCpt() {
-        etiquetteCpt.clear();
-        etiquetteCpt.put(NodeType.AND,0);
-        etiquetteCpt.put(NodeType.OR,0);
-        etiquetteCpt.put(NodeType.NOT,0);
-        etiquetteCpt.put(NodeType.EGAL,0);
-        etiquetteCpt.put(NodeType.GT,0);
-        etiquetteCpt.put(NodeType.GTE,0);
-        etiquetteCpt.put(NodeType.WHILE, 0);
-        etiquetteCpt.put(NodeType.IF_T, 0);
-        etiquetteCpt.put(NodeType.IF_TE, 0);
+    protected static HashMap<NodeType, Integer> createcpt() {
+        HashMap<NodeType, Integer> cpt = new HashMap<NodeType, Integer>();
+
+        cpt.clear();
+        cpt.put(NodeType.AND,0);
+        cpt.put(NodeType.OR,0);
+        cpt.put(NodeType.NOT,0);
+        cpt.put(NodeType.EGAL,0);
+        cpt.put(NodeType.GT,0);
+        cpt.put(NodeType.GTE,0);
+        cpt.put(NodeType.WHILE, 0);
+        cpt.put(NodeType.IF_T, 0);
+        cpt.put(NodeType.IF_TE, 0);
+
+        return cpt;
     }
 
-    protected String toInstruction() {
+    /** toInstruction
+     * Convertie la Node et ses fils en code assembleur lambdada
+     * Le résultat de chaque instruction est stocké dans le registre eax (si applicable)
+     * @param cpt compteur pour les instructions conditionnelles pour créer des étiquettes uniques
+     * @return code assembleur lambdada
+     */
+    protected String toInstruction(HashMap<NodeType, Integer> cpt) {
         switch (this.type) {
             case POINT:
-                return this.fils.get(0).toInstruction();
+                return this.fils.get(0).toInstruction(cpt); // On ne fait rien avec POINT (on continue d'explorer l'arbre)
             case SEMI:
-                return this.fils.get(0).toInstruction() +
-                     this.fils.get(1).toInstruction();
+                return this.fils.get(0).toInstruction(cpt) + // On exécute la première instruction
+                     this.fils.get(1).toInstruction(cpt); // On exécute la deuxième instruction
             case NIL:
-                return "\tnop\n";
+                return "\tnop\n"; // No operation
             case IDENT:
-                return "\tmov eax, " + this.valeur.toString() + "\n";
+                return "\tmov eax, " + this.valeur.toString() + "\n"; // On charge la valeur de la variable dans eax
             case ENTIER:
-                return "\tmov eax, " + this.valeur.toString() + "\n";
+                return "\tmov eax, " + this.valeur.toString() + "\n"; // On charge la valeur de l'entier dans eax
             case INPUT:
-                return "\tin eax\n";
+                return "\tin eax\n"; // On charge la valeur de l'entrée standard dans eax
             case OUTPUT:
-                return this.fils.get(0).toInstruction() +
-                 "\tout eax\n";
+                return this.fils.get(0).toInstruction(cpt) + // On exécute l'instruction à afficher (qui doit mettre le résultat dans eax)
+                 "\tout eax\n"; // On affiche la valeur de eax
             case THEN:
-                return this.fils.get(0).toInstruction();
+                return this.fils.get(0).toInstruction(cpt); // On ne fait rien avec THEN (on continue d'explorer l'arbre)
             case ELSE:
-                return this.fils.get(0).toInstruction();
+                return this.fils.get(0).toInstruction(cpt); // On ne fait rien avec ELSE (on continue d'explorer l'arbre)
             case DO:
-                return this.fils.get(0).toInstruction();
+                return this.fils.get(0).toInstruction(cpt); // On ne fait rien avec DO (on continue d'explorer l'arbre)
             case LET:
-                return this.fils.get(1).toInstruction() + 
-                    "\tmov " + this.fils.get(0).valeur.toString() + ", eax\n";
+                return this.fils.get(1).toInstruction(cpt) + // On exécute l'instruction d'initialisation (qui doit mettre le résultat dans eax)
+                    "\tmov " + this.fils.get(0).valeur.toString() + ", eax\n"; // On stocke le résultat dans la variable
             case DIV:
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" + 
-                    "\tdiv eax, ebx\n";
+                return this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le deuxième opérande
+                    this.fils.get(0).toInstruction(cpt) +  // On charge le premier opérande dans eax
+                    "\tpop ebx\n" + // On restaure le deuxième opérande dans ebx
+                    "\tdiv eax, ebx\n"; // On divise le premier opérande par le deuxième
             case MUL:
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" + 
-                    "\tmul eax, ebx\n";
+                return this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le deuxième opérande
+                    this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpop ebx\n" + // On restaure le deuxième opérande dans ebx
+                    "\tmul eax, ebx\n"; // On multiplie le premier opérande par le deuxième
             case MOINS:
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" + 
-                    "\tsub eax, ebx\n";
+                return this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le deuxième opérande
+                    this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpop ebx\n" + // On restaure le deuxième opérande dans ebx
+                    "\tsub eax, ebx\n"; // On soustrait le deuxième opérande du premier
             case PLUS:
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" + 
-                    "\tadd eax, ebx\n";
+                return this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le deuxième opérande
+                    this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpop ebx\n" + // On restaure le deuxième opérande dans ebx
+                    "\tadd eax, ebx\n";// On ajoute le deuxième opérande au premier
             case MOINS_UNAIRE:
-                return this.fils.get(0).toInstruction() + 
-                    "\tmov ebx, eax\n" +
-                    "\tmov eax, 0\n" +
-                    "\tsub eax, ebx\n";
+                return this.fils.get(0).toInstruction(cpt) + // On charge l'opérande dans eax
+                    "\tmov ebx, eax\n" + // On copie l'opérande dans ebx
+                    "\tmov eax, 0\n" + // On met 0 dans eax
+                    "\tsub eax, ebx\n"; // On soustrait l'opérande à 0
             case MOD:
-                return this.fils.get(1).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(0).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tmov ecx, eax\n" +
-                    "\tdiv ecx, ebx\n" +
-                    "\tmul ecx, ebx\n" +
-                    "\tsub eax, ecx\n";
+                return this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le deuxième opérande
+                    this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpop ebx\n" + // On restaure le deuxième opérande dans ebx
+                    "\tmov ecx, eax\n" + // On copie le premier opérande dans ecx
+                    "\tdiv ecx, ebx\n" + // On divise le premier opérande par le deuxième
+                    "\tmul ecx, ebx\n" + // On multiplie le quotient par le deuxième opérande
+                    "\tsub eax, ecx\n"; // On soustrait le produit du quotient par le deuxième opérande au premier opérande
             case GT:
-                etiquetteCpt.put(NodeType.GT, etiquetteCpt.get(NodeType.GT) + 1);
-                String eId = etiquetteCpt.get(NodeType.GT).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tsub eax, ebx\n" +
-                    "\tjle faux_gt_"+eId+"\n" +
-                    "\tmov eax, 1\n" +
-                    "\tjmp fin_gt_"+eId+"\n" +
-                    "faux_gt_"+eId+":\n" +
-                    "\tmov eax, 0\n" +
-                    "fin_gt_"+eId+":\n";
+                cpt.put(NodeType.GT, cpt.get(NodeType.GT) + 1);
+                String eId = cpt.get(NodeType.GT).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le premier opérande
+                    this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpop ebx\n" + // On restaure le premier opérande dans ebx
+                    "\tsub eax, ebx\n" + // On soustrait le deuxième opérande du premier
+                    "\tjle faux_gt_"+eId+"\n" + // Si le résultat est inférieur ou égal à 0, on saute à la fausse condition
+                    "\tmov eax, 1\n" + // Sinon, on met 1 dans eax
+                    "\tjmp fin_gt_"+eId+"\n" + // On saute à la fin de la condition
+                    "faux_gt_"+eId+":\n" + // Étiquette pour la fausse condition
+                    "\tmov eax, 0\n" + // On met 0 dans eax
+                    "fin_gt_"+eId+":\n"; // Étiquette pour la fin de la condition
             case GTE:
-                etiquetteCpt.put(NodeType.GTE, etiquetteCpt.get(NodeType.GTE) + 1);
-                eId = etiquetteCpt.get(NodeType.GTE).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tsub eax, ebx\n" +
-                    "\tjl faux_gte_"+eId+"\n" +
-                    "\tmov eax, 1\n" +
-                    "\tjmp fin_gte_"+eId+"\n" +
-                    "faux_gte_"+eId+":\n" +
-                    "\tmov eax, 0\n" +
-                    "fin_gte_"+eId+":\n";
+                cpt.put(NodeType.GTE, cpt.get(NodeType.GTE) + 1);
+                eId = cpt.get(NodeType.GTE).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le premier opérande
+                    this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpop ebx\n" + // On restaure le premier opérande dans ebx
+                    "\tsub eax, ebx\n" + // On soustrait le deuxième opérande du premier
+                    "\tjl faux_gte_"+eId+"\n" + // Si le résultat est inférieur à 0, on saute à la fausse condition
+                    "\tmov eax, 1\n" + // Sinon, on met 1 dans eax
+                    "\tjmp fin_gte_"+eId+"\n" + // On saute à la fin de la condition
+                    "faux_gte_"+eId+":\n" + // Étiquette pour la fausse condition
+                    "\tmov eax, 0\n" + // On met 0 dans eax
+                    "fin_gte_"+eId+":\n"; // Étiquette pour la fin de la condition
             case EGAL:
-                etiquetteCpt.put(NodeType.EGAL, etiquetteCpt.get(NodeType.EGAL) + 1);
-                eId = etiquetteCpt.get(NodeType.EGAL).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tsub eax, ebx\n" +
-                    "\tjz faux_egal_"+eId+"\n" +
-                    "\tmov eax, 1\n" +
-                    "\tjmp fin_egal_"+eId+"\n" +
-                    "faux_egal_"+eId+":\n" +
-                    "\tmov eax, 0\n" +
-                    "fin_egal_"+eId+":\n";
+                cpt.put(NodeType.EGAL, cpt.get(NodeType.EGAL) + 1);
+                eId = cpt.get(NodeType.EGAL).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tpush eax\n" + // On sauvegarde le premier opérande
+                    this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tpop ebx\n" + // On restaure le premier opérande dans ebx
+                    "\tsub eax, ebx\n" + // On soustrait le deuxième opérande du premier
+                    "\tjz vrai_egal_"+eId+"\n" + // Si le résultat est égal à 0, on saute à la vrai condition
+                    "\tmov eax, 0\n" + // Sinon, on met 1 dans eax
+                    "\tjmp fin_egal_"+eId+"\n" + // On saute à la fin de la condition
+                    "vrai_egal_"+eId+":\n" + // Étiquette pour la fausse condition
+                    "\tmov eax, 1\n" + // On met 0 dans eax
+                    "fin_egal_"+eId+":\n"; // Étiquette pour la fin de la condition
             case NOT:
-                etiquetteCpt.put(NodeType.NOT, etiquetteCpt.get(NodeType.NOT) + 1);
-                eId = etiquetteCpt.get(NodeType.NOT).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tmov ebx, 0" +
-                    "\tsub ebx, eax\n" +
-                    "\tjl faux_not_"+eId+"\n" +
-                    "\tmov eax, 1\n" +
-                    "\tjmp fin_not_"+eId+"\n" +
-                    "faux_not_"+eId+":\n" +
-                    "\tmov eax, 0\n" +
-                    "fin_not_"+eId+":\n";
+                cpt.put(NodeType.NOT, cpt.get(NodeType.NOT) + 1);
+                eId = cpt.get(NodeType.NOT).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge l'opérande dans eax
+                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait l'opérande à 0
+                    "\tjl faux_not_"+eId+"\n" + // Si le résultat est inférieur à 0, on saute à la fausse condition
+                    "\tmov eax, 1\n" + // Sinon, on met 1 dans eax
+                    "\tjmp fin_not_"+eId+"\n" + // On saute à la fin de la condition
+                    "faux_not_"+eId+":\n" + // Étiquette pour la fausse condition
+                    "\tmov eax, 0\n" + // On met 0 dans eax
+                    "fin_not_"+eId+":\n"; // Étiquette pour la fin de la condition
             case OR:
-                etiquetteCpt.put(NodeType.OR, etiquetteCpt.get(NodeType.OR) + 1);
-                eId = etiquetteCpt.get(NodeType.OR).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tmov ecx, 0" +
-                    "\tcmp ecx, eax\n" + // Compare second operand with 0
-                    "\tjl vrai_or_"+eId+"\n" + // If second operand is 1, jump to true case
-                    "\tmov ecx, 0\n" +
-                    "\tsub ecx, ebx\n" + // Compare first operand with 0
-                    "\tjl vrai_or_"+eId+"\n" + // If first operand is 1, jump to true case
-                    "\tmov eax, 0\n" + // Both operands are non-zero, set eax to 1 (false)
-                    "\tjmp fin_and_"+eId+"\n" + // Jump to end
-                    "vrai_or_"+eId+":\n" +
-                    "\tmov eax, 1\n" + // One or both operands are zero, set eax to 0 (true)
-                    "fin_and_"+eId+":\n";
+                cpt.put(NodeType.OR, cpt.get(NodeType.OR) + 1);
+                eId = cpt.get(NodeType.OR).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait le premier opérande à 0
+                    "\tjge vrai_or_"+eId+"\n" + // Si le premier opérande est supérieur ou égal à 0, on saute à la vraie condition
+                    this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tmov ebx, 0" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait le deuxième opérande à 0
+                    "\tjge vrai_or_"+eId+"\n" + // Si le deuxième opérande est supérieur ou égal à 0, on saute à la vraie condition
+                    "\tmov eax, 0\n" + // Sinon, on met 0 dans eax
+                    "\tjmp fin_or_"+eId+"\n" + // On saute à la fin de la condition
+                    "vrai_or_"+eId+":\n" + // Étiquette pour la vraie condition
+                    "\tmov eax, 1\n" + // On met 1 dans eax
+                    "fin_or_"+eId+":\n"; // Étiquette pour la fin de la condition
             case AND:
-                etiquetteCpt.put(NodeType.AND, etiquetteCpt.get(NodeType.AND) + 1);
-                eId = etiquetteCpt.get(NodeType.AND).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tpush eax\n" + 
-                    this.fils.get(1).toInstruction() + 
-                    "\tpop ebx\n" +
-                    "\tcmp eax, 0\n" + // Compare second operand with 0
-                    "\tje faux_and_"+eId+"\n" + // If second operand is 0, jump to false case
-                    "\tcmp ebx, 0\n" + // Compare first operand with 0
-                    "\tje faux_and_"+eId+"\n" + // If first operand is 0, jump to false case
-                    "\tmov eax, 1\n" + // Both operands are non-zero, set eax to 1 (true)
-                    "\tjmp fin_and_"+eId+"\n" + // Jump to end
-                    "faux_and_"+eId+":\n" +
-                    "\tmov eax, 0\n" + // One or both operands are zero, set eax to 0 (false)
-                    "fin_and_"+eId+":\n";
+                cpt.put(NodeType.AND, cpt.get(NodeType.AND) + 1);
+                eId = cpt.get(NodeType.AND).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge le premier opérande dans eax
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait le premier opérande à 0
+                    "\tjl faux_and_"+eId+"\n" + // Si le premier opérande est inférieur à 0, on saute à la fausse condition
+                    this.fils.get(1).toInstruction(cpt) + // On charge le deuxième opérande dans eax
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait le deuxième opérande à 0
+                    "\tjl faux_and_"+eId+"\n" + // Si le deuxième opérande est inférieur à 0, on saute à la fausse condition
+                    "\tmov eax, 1\n" + // Sinon, on met 1 dans eax
+                    "\tjmp fin_and_"+eId+"\n" + // On saute à la fin de la condition
+                    "faux_and_"+eId+":\n" + // Étiquette pour la fausse condition
+                    "\tmov eax, 0\n" + // On met 0 dans eax
+                    "fin_and_"+eId+":\n"; // Étiquette pour la fin de la condition
             case IF_T:
-                etiquetteCpt.put(NodeType.IF_T, etiquetteCpt.get(NodeType.IF_T) + 1);
-                eId = etiquetteCpt.get(NodeType.IF_T).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tmov ebx, 0\n" +
-                    "\tsub ebx, eax\n" +
-                    "\tjl vrai_if_"+eId+"\n" +
-                    "\tjmp fin_if_"+eId+"\n" +
-                    "vrai_if_"+eId+":\n" +
-                    this.fils.get(1).toInstruction() +
-                    "fin_if_"+eId+":\n";
+                cpt.put(NodeType.IF_T, cpt.get(NodeType.IF_T) + 1);
+                eId = cpt.get(NodeType.IF_T).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge l'opérande condition dans eax
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait l'opérande condition à 0
+                    "\tjl vrai_if_"+eId+"\n" + // Si l'opérande condition est inférieur à 0, on saute à la vraie condition
+                    "\tjmp fin_if_"+eId+"\n" + // Sinon, on saute à la fin de la condition
+                    "vrai_if_"+eId+":\n" + // Étiquette pour la vraie condition
+                    this.fils.get(1).toInstruction(cpt) + // Instruction à exécuter si la condition est vraie
+                    "fin_if_"+eId+":\n"; // Étiquette pour la fin de la condition
             case IF_TE:
-                etiquetteCpt.put(NodeType.IF_TE, etiquetteCpt.get(NodeType.IF_TE) + 1);
-                eId = etiquetteCpt.get(NodeType.IF_TE).toString();
-                return this.fils.get(0).toInstruction() + 
-                    "\tmov ebx, 0\n" +
-                    "\tsub ebx, eax\n" +
-                    "\tjl vrai_if_"+eId+"\n" +
-                    this.fils.get(1).toInstruction() +
-                    "\tjmp fin_if_"+eId+"\n" +
-                    "vrai_if_"+eId+":\n" +
-                    this.fils.get(2).toInstruction() +
-                    "fin_if_"+eId+":\n";
+                cpt.put(NodeType.IF_TE, cpt.get(NodeType.IF_TE) + 1);
+                eId = cpt.get(NodeType.IF_TE).toString(); // Créer un identifiant unique pour l'instruction
+                return this.fils.get(0).toInstruction(cpt) + // On charge l'opérande condition dans eax
+                    "\tmov ebx, 0\n" + // On met 0 dans ebx
+                    "\tsub ebx, eax\n" + // On soustrait l'opérande condition à 0
+                    "\tjl vrai_if_"+eId+"\n" + // Si l'opérande condition est inférieur à 0, on saute à la vraie condition
+                    this.fils.get(2).toInstruction(cpt) + // Instruction à exécuter si la condition est fausse
+                    "\tjmp fin_if_"+eId+"\n" + // On saute à la fin de la condition
+                    "vrai_if_"+eId+":\n" + // Étiquette pour la vraie condition
+                    this.fils.get(1).toInstruction(cpt) + // Instruction à exécuter si la condition est vraie
+                    "fin_if_"+eId+":\n"; // Étiquette pour la fin de la condition
             case WHILE:
-                etiquetteCpt.put(NodeType.WHILE, etiquetteCpt.get(NodeType.WHILE) + 1);
-                eId = etiquetteCpt.get(NodeType.WHILE).toString();
-                return "debut_while_"+eId+":\n" +
-                    this.fils.get(0).toInstruction() + 
-                    "\tjz fin_while_"+eId+"\n" +
-                    this.fils.get(1).toInstruction() +
-                    "\tjmp debut_while_"+eId+"\n" +
-                    "fin_while_"+eId+":\n";
+                cpt.put(NodeType.WHILE, cpt.get(NodeType.WHILE) + 1);
+                eId = cpt.get(NodeType.WHILE).toString(); // Créer un identifiant unique pour l'instruction
+                return "debut_while_"+eId+":\n" + // Étiquette pour le début de la boucle
+                    this.fils.get(0).toInstruction(cpt) + // On charge l'opérande condition dans eax
+                    "\tjz fin_while_"+eId+"\n" + // Si l'opérande condition est égal à 0, on saute à la fin de la boucle
+                    this.fils.get(1).toInstruction(cpt) + // Instruction à exécuter tant que la condition est vraie
+                    "\tjmp debut_while_"+eId+"\n" + // On saute au début de la boucle
+                    "fin_while_"+eId+":\n"; // Étiquette pour la fin de la boucle
             default:
                 throw new IllegalArgumentException("Invalid instruction Node " + this.type);
         }
     }
 
+    /** toProgram
+     * Convertie un Arbre abstrait en un programme lambdada
+     * @exception IllegalArgumentException Un programme commence par une Node POINT
+     * @param name nom du fichier .lambdada à créer
+     * @param env environnement de variables à déclarer
+     */
     public void toProgram(String name, HashMap<String, Integer> env) {
+        if(this.type != NodeType.POINT){
+            throw new IllegalArgumentException("Program Node must be a POINT Node");
+        }
         try (FileWriter w = new FileWriter(name + ".lambdada", false)) {
             w.write("\n");
             w.write(this.toString() + "\n");
@@ -410,11 +447,9 @@ public class Node {
                 w.write("\t" + key + " DD \n");
             }
             w.write("DATA ENDS\n");
-            initEtiquetteCpt();
             w.write("CODE SEGMENT\n");
-            w.write(this.toInstruction());
+            w.write(this.toInstruction(createcpt()));
             w.write("CODE ENDS\n");
-            etiquetteCpt.clear();
         } catch (IOException e) {
             e.printStackTrace();
         }

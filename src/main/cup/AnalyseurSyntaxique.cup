@@ -42,7 +42,7 @@ terminal Integer ENTIER;
 terminal String IDENT;
 /* non terminaux */
 non terminal program;
-non terminal Node sequence, expression, expr;
+non terminal Node sequence, expression, if_expr, expr;
 
 precedence nonassoc OUTPUT;
 precedence right OR;
@@ -67,13 +67,16 @@ sequence ::= expression:e SEMI sequence:s {: RESULT = new Node(NodeType.SEMI, e,
             ;
 
 // une expession est soit une affectation ,une       
-            //  | IF expr:cond THEN expression:a1 {: RESULT = new Node(NodeType.IF_T, cond, new Node(NodeType.THEN, a1)); :}       
 expression ::= expr:e {: RESULT = e; :}
              | LET IDENT:nom EGAL expr:e {: RESULT = new Node(NodeType.LET, new Node(NodeType.IDENT, nom), e); vars.put(nom, 0); :}         
              | WHILE expr:cond DO expression:e {: RESULT = new Node(NodeType.WHILE, cond, new Node(NodeType.DO, e)); :}
-             | IF expr:cond THEN expression:a1 ELSE expression:a2 {: RESULT = new Node(NodeType.IF_TE, cond, new Node(NodeType.THEN, a1), new Node(NodeType.ELSE, a2)); :}
+             | if_expr:i {: RESULT = i; :}
              | error {: erreur = true; RESULT = new Node(NodeType.ERROR); :}
              ;
+
+if_expr ::= IF expr:cond THEN expr:a1 {: RESULT = new Node(NodeType.IF_T, cond, new Node(NodeType.THEN, a1)); :}
+          | IF expr:cond THEN expr:a1 ELSE expr:a2 {: RESULT = new Node(NodeType.IF_TE, cond, new Node(NodeType.THEN, a1), new Node(NodeType.ELSE, a2)); :}
+          ;
 
 // expression arithmetiques et logiques 
 expr ::= NOT:op expr:e {: RESULT = new Node(NodeType.NOT, e); :}

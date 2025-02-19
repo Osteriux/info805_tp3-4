@@ -10,8 +10,6 @@ public enum NodeType {
     NOT,
     OR,
     AND,
-    PAR_G,
-    PAR_D,
     SEMI,
     POINT,
     LET,

@@ -1,0 +1,20 @@
+let op = input;
+let a = input;
+let b = input;
+if (op = 1) 
+then (
+    output a + b
+);
+if (op = 2)
+then (
+    output a - b
+);
+if (op = 3)
+then (
+    output a * b
+);
+if (op = 4)
+then (
+    output a / b
+)
+.
