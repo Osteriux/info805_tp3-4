@@ -401,7 +401,7 @@ public class Node {
     }
 
     public void toProgram(String name, HashMap<String, Integer> env) {
-        try (FileWriter w = new FileWriter(name + ".lambdada", true)) {
+        try (FileWriter w = new FileWriter(name + ".lambdada", false)) {
             w.write("\n");
             w.write(this.toString() + "\n");
             w.write("\n");
