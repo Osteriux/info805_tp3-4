@@ -1,26 +1,5 @@
-let op = input;
 let a = input;
 let b = input;
-while (not ( op = 0 ) )
-do (
-    if (op = 1) 
-    then (
-        output a + b
-    );
-    if (op = 2)
-    then (
-        output a - b
-    );
-    if (op = 3)
-    then (
-        output a * b
-    );
-    if (op = 4)
-    then (
-        output a / b
-    );
-    let op = input;
-    let a = input;
-    let b = input
-)
-.
+while (0 < b)
+do (let aux=(a mod b); let a=b; let b=aux );
+output a .

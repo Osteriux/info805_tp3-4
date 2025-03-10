@@ -4,168 +4,122 @@
 
 ## Présentation
 
-### Node
-
-La classe Node représente un arbre n-aire utilisé pour construire l'arbre abstrait du programme pour ensuit le convertire en lambdada.
-
 ### NodeType
 
 NodeType est un enum des différents types de nodes (aka d'opérations) supportés par Node. Il permet de créer et d'interpréter les nodes sans ambiguïté.
 
+### Node
+
+La classe Node représente un arbre n-aire utilisé pour construire l'arbre abstrait du programme pour ensuit le convertire en lambdada.
+J'ai choisit de construire la methode `toInstruction` avec un switch case plutôt qu'en faisant des sous classes pour chaque type d'instruction car cela autait demandé de créer beaucoup de calsses différentes pour override une seul méthode.
+
+J'ai choisit de stoquer le résultat de toutes les instructions dans le registre eax.
+
+### CUP
+
+J'ai ajouté un symbole non terminal afin de pouvoir gérer des IF THEN en plus des IF THEN ELSE. Il fallait le gérer avec un symbole supplémantaire afin de le désambïgué.
+
 ## Examples
 
-> Calculatrice
+#### Exercice 1
+
+> Pseudo code :
 ```
-let op = input;
-let a = input;
-let b = input;
-while (not ( op = 0 ) )
-do (
-    if (op = 1) 
-    then (
-        output a + b
-    );
-    if (op = 2)
-    then (
-        output a - b
-    );
-    if (op = 3)
-    then (
-        output a * b
-    );
-    if (op = 4)
-    then (
-        output a / b
-    );
-    let op = input;
-    let a = input;
-    let b = input
-)
-.
+let prixHt = 200;
+let prixTtc =  prixHt * 119 / 100 .
 ```
-> Calculatrice
+
+> Instruction générés :
 ```
 DATA SEGMENT
-	op DD 
-	a DD 
-	b DD 
+	prixTtc DD 
+	prixHt DD 
 DATA ENDS
 CODE SEGMENT
-	in eax
-	mov op, eax
+	mov eax, 200
+	mov prixHt, eax
+	mov eax, 100
+	push eax
+	mov eax, 119
+	push eax
+	mov eax, prixHt
+	pop ebx
+	mul eax, ebx
+	pop ebx
+	div eax, ebx
+	mov prixTtc, eax
+CODE ENDS
+```
+
+#### Exercice 2
+
+> Pseudo code :
+```
+let a = input;
+let b = input;
+while (0 < b)
+do (let aux=(a mod b); let a=b; let b=aux );
+output a
+.
+```
+
+> Instruction générés :
+```
+DATA SEGMENT
+	a DD 
+	b DD 
+	aux DD 
+DATA ENDS
+CODE SEGMENT
 	in eax
 	mov a, eax
 	in eax
 	mov b, eax
-	mov eax, op
+debut_while_1:
+	mov eax, 0
 	push eax
-	mov eax, 1
+	mov eax, b
 	pop ebx
 	sub eax, ebx
-	jz vrai_egal_1
-	mov eax, 0
-	jmp fin_egal_1
-vrai_egal_1:
+	jle faux_gt_1
 	mov eax, 1
-fin_egal_1:
-	mov ebx, 0
-	sub ebx, eax
-	jl vrai_if_1
-	jmp fin_if_1
-vrai_if_1:
+	jmp fin_gt_1
+faux_gt_1:
+	mov eax, 0
+fin_gt_1:
+	jz fin_while_1
 	mov eax, b
 	push eax
 	mov eax, a
 	pop ebx
-	add eax, ebx
-	out eax
-fin_if_1:
-	mov eax, op
-	push eax
-	mov eax, 2
-	pop ebx
-	sub eax, ebx
-	jz vrai_egal_2
-	mov eax, 0
-	jmp fin_egal_2
-vrai_egal_2:
-	mov eax, 1
-fin_egal_2:
-	mov ebx, 0
-	sub ebx, eax
-	jl vrai_if_2
-	jmp fin_if_2
-vrai_if_2:
+	mov ecx, eax
+	div ecx, ebx
+	mul ecx, ebx
+	sub eax, ecx
+	mov aux, eax
 	mov eax, b
-	push eax
+	mov a, eax
+	mov eax, aux
+	mov b, eax
+	jmp debut_while_1
+fin_while_1:
 	mov eax, a
-	pop ebx
-	sub eax, ebx
 	out eax
-fin_if_2:
-	mov eax, op
-	push eax
-	mov eax, 3
-	pop ebx
-	sub eax, ebx
-	jz vrai_egal_3
-	mov eax, 0
-	jmp fin_egal_3
-vrai_egal_3:
-	mov eax, 1
-fin_egal_3:
-	mov ebx, 0
-	sub ebx, eax
-	jl vrai_if_3
-	jmp fin_if_3
-vrai_if_3:
-	mov eax, b
-	push eax
-	mov eax, a
-	pop ebx
-	mul eax, ebx
-	out eax
-fin_if_3:
-	mov eax, op
-	push eax
-	mov eax, 4
-	pop ebx
-	sub eax, ebx
-	jz vrai_egal_4
-	mov eax, 0
-	jmp fin_egal_4
-vrai_egal_4:
-	mov eax, 1
-fin_egal_4:
-	mov ebx, 0
-	sub ebx, eax
-	jl vrai_if_4
-	jmp fin_if_4
-vrai_if_4:
-	mov eax, b
-	push eax
-	mov eax, a
-	pop ebx
-	div eax, ebx
-	out eax
-fin_if_4:
 CODE ENDS
 ```
 
-> PGCD
+#### PGCD
+
+> Pseudo code :
 ```
 let a = input;
 let b = input;
-while ( 0 < b )
-do (
-    let aux = ( a mod b );
-    let a = b;
-    let b = aux
-);
-output a
-.
+while (0 < b)
+do (let aux=(a mod b); let a=b; let b=aux );
+output a .
 ```
-> PGCD
+
+> Instruction générés :
 ```
 DATA SEGMENT
 	a DD 
